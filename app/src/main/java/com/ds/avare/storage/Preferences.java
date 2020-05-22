@@ -81,7 +81,7 @@ public class Preferences {
 
 
     public static final int MEM_192_X = 9;
-    public static final int MEM_192_Y = 7;
+    public static final int MEM_192_Y = 9;
     public static final int MEM_192_OH = 13;
     public static final int MEM_128_X = 7;
     public static final int MEM_128_Y = 5;
@@ -323,8 +323,8 @@ public class Preferences {
         defaultDisplay.getMetrics(displayMetrics);
         int width = displayMetrics.widthPixels;
         int height = displayMetrics.heightPixels;
-        int tilesx = (width / BitmapHolder.WIDTH) + 2; // add 1 for round up, and 1 for zoom
-        int tilesy = (height / BitmapHolder.HEIGHT) + 2;
+        int tilesx = (2*width / BitmapHolder.WIDTH) + 1; // add 1 for round up, and 1 for zoom
+        int tilesy = (2*height / BitmapHolder.HEIGHT) + 1;
 
         // odd tiles only
         if(tilesx % 2 == 0) {
