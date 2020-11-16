@@ -75,15 +75,18 @@ public class Preferences {
     /*
      * Max memory and max screen size it will support
      */
-    public static final long MEM_256 = 256 * 1024 * 1024;
+    public static final long MEM_512 = 512 * 1024 * 1024;
     public static final long MEM_192 = 192 * 1024 * 1024;
     public static final long MEM_128 = 128 * 1024 * 1024;
     public static final long MEM_64 = 64 * 1024 * 1024;
     public static final long MEM_32 = 32 * 1024 * 1024;
 
 
+    public static final int MEM_512_X = 13;
+    public static final int MEM_512_Y = 11;
+    public static final int MEM_512_OH = 31;
     public static final int MEM_192_X = 9;
-    public static final int MEM_192_Y = 9;
+    public static final int MEM_192_Y = 7;
     public static final int MEM_192_OH = 13;
     public static final int MEM_128_X = 7;
     public static final int MEM_128_Y = 5;
@@ -329,7 +332,11 @@ public class Preferences {
          */
         long mem = Runtime.getRuntime().maxMemory();
 
-        if (mem >= MEM_192) {
+        if (mem >= MEM_512) {
+            ret[0] = MEM_512_X;
+            ret[1] = MEM_512_Y;
+            ret[2] = MEM_512_OH;
+        } else if (mem >= MEM_192) {
             ret[0] = MEM_192_X;
             ret[1] = MEM_192_Y;
             ret[2] = MEM_192_OH;
@@ -359,8 +366,8 @@ public class Preferences {
         defaultDisplay.getMetrics(displayMetrics);
         int width = displayMetrics.widthPixels;
         int height = displayMetrics.heightPixels;
-        int tilesx = (2*width / BitmapHolder.WIDTH) + 1; // add 1 for round up, and 1 for zoom
-        int tilesy = (2*height / BitmapHolder.HEIGHT) + 1;
+        int tilesx = (int) (Math.ceil(height / (BitmapHolder.WIDTH / 2.0)) + 1); // ceil for round up, and half tile size for zoom
+        int tilesy = (int) (Math.ceil(height / (BitmapHolder.HEIGHT / 2.0)) + 1);
 
         // odd tiles only
         if(tilesx % 2 == 0) {
