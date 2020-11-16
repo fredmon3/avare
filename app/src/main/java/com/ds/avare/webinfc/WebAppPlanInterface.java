@@ -17,9 +17,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
-import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -43,7 +41,6 @@ import com.ds.avare.utils.Helper;
 import com.ds.avare.utils.NetworkHelper;
 import com.ds.avare.utils.WeatherHelper;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -301,11 +298,9 @@ public class WebAppPlanInterface implements Observer {
      */
     private boolean isSame(Location l0, Location l1) {
     	double dist = Projection.getStaticDistance(l0.getLongitude(), l0.getLatitude(), l1.getLongitude(), l1.getLatitude());
-    	if(dist < 0.01) {
-    		return true;
-    	}
-    	return false;
-    }
+
+    	return dist < 0.01;
+	}
     
     /**
      * New dest
@@ -892,7 +887,8 @@ public class WebAppPlanInterface implements Observer {
             LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
 
             mService.getDBResource().search(srch, params, true);
-            mService.getUDWMgr().search(srch, params);			// From user defined points of interest
+			mService.getUDWMgr().search(srch, params);			// From user defined points of interest
+			mPref.searchARecent(srch, params);			// From recently used locations (named GPS points)
             if(params.size() > 0) {
                 selection = new String[params.size()];
                 int iterator = 0;

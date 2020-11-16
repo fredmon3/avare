@@ -1,16 +1,19 @@
 package com.ds.avare.adsb;
 
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.util.SparseArray;
 
 import com.ds.avare.StorageService;
 import com.ds.avare.gps.GpsParams;
+import com.ds.avare.position.Coordinate;
 import com.ds.avare.position.Origin;
-import com.ds.avare.position.PixelCoordinate;
+import com.ds.avare.position.Projection;
 import com.ds.avare.shapes.DrawingContext;
 import com.ds.avare.threed.AreaMapper;
 import com.ds.avare.threed.TerrainRenderer;
 import com.ds.avare.threed.data.Vector4d;
+import com.ds.avare.utils.BitmapHolder;
 import com.ds.avare.utils.Helper;
 
 public class Traffic {
@@ -23,7 +26,8 @@ public class Traffic {
     public float mHeading;
     public String mCallSign;
     private long mLastUpdate;
-    
+    private static Matrix mMatrix = new Matrix();
+
 
     public static final double TRAFFIC_ALTITUDE_DIFF_DANGEROUS = 1000; //ft 300m required minimum
     
@@ -52,7 +56,7 @@ public class Traffic {
         mHeading = heading;
         mHorizVelocity = speed;
         mLastUpdate = time;
-        
+
         /*
          * Limit
          */
@@ -68,11 +72,9 @@ public class Traffic {
     public boolean isOld() {
 
         long diff = Helper.getMillisGMT();
-        diff -= mLastUpdate; 
-        if(diff > EXPIRES) {
-            return true;
-        }
-        return false;
+        diff -= mLastUpdate;
+
+        return diff > EXPIRES;
     }
     
     /**
@@ -110,7 +112,8 @@ public class Traffic {
         return color;
     }
 
-    public static void draw(DrawingContext ctx, SparseArray<Traffic> traffic, double altitude, GpsParams params, int ownIcao, boolean shouldDraw) {
+    public static void draw(DrawingContext ctx, SparseArray<Traffic> traffic, double altitude, GpsParams params, int ownIcao, boolean shouldDraw,
+                            BitmapHolder bRed, BitmapHolder bGreen, BitmapHolder bBlue, BitmapHolder bMagenta) {
 
         int filterAltitude = ctx.pref.showAdsbTrafficWithin();
 
@@ -135,9 +138,12 @@ public class Traffic {
                 continue;
             }
 
-            if(!isOnScreen(ctx.origin, t.mLat, t.mLon)) {
-                continue;
-            }
+            /*
+             * Draw all traffic as its not reported for far of places.
+             *   if(!isOnScreen(ctx.origin, t.mLat, t.mLon)) {
+             *       continue;
+             *   }
+             */
 
             /*
              * Make traffic line and info
@@ -149,6 +155,19 @@ public class Traffic {
              * Find color from altitude
              */
             int color = Traffic.getColorFromAltitude(altitude, t.mAltitude);
+            BitmapHolder b = null;
+            if (color == Color.RED) {
+                b = bRed;
+            }
+            else if (color == Color.GREEN) {
+                b = bGreen;
+            }
+            else if (color == Color.BLUE) {
+                b = bBlue;
+            }
+            else {
+                b = bMagenta;
+            }
 
             int diff;
             String text = "";
@@ -173,27 +192,21 @@ public class Traffic {
                 }
             }
 
+            mMatrix.setRotate(t.mHeading, b.getWidth() / 2, b.getHeight() / 2);
+            mMatrix.postTranslate(x - b.getWidth() / 2, y - b.getHeight() / 2);
 
-            float radius = ctx.dip2pix * 8;
-            /*
-             * Draw outline to show it clearly
-             */
-            ctx.paint.setColor((~color) | 0xFF000000);
-            ctx.canvas.drawCircle(x, y, radius + 2, ctx.paint);
-
-            ctx.paint.setColor(color);
-            ctx.canvas.drawCircle(x, y, radius, ctx.paint);
+            ctx.canvas.drawBitmap(b.getBitmap(), mMatrix, ctx.paint);
             /*
              * Show a barb for heading with length based on speed
-             * Vel can be 0 to 4096 knots (practically it can be 0 to 500 knots), so set from length 0 to 100 pixels (1/5)
+             * Find distance target will travel in 1 min
              */
-            float speedLength = radius + (float)t.mHorizVelocity * (float)ctx.dip2pix / 5.f;
-            /*
-             * Rotation of points to show direction
-             */
-            double xr = x + PixelCoordinate.rotateX(speedLength, t.mHeading);
-            double yr = y + PixelCoordinate.rotateY(speedLength, t.mHeading);
-            ctx.canvas.drawLine(x, y, (float)xr, (float)yr, ctx.paint);
+            ctx.paint.setColor(color);
+            float distance2 = (float)t.mHorizVelocity / 60.f;
+            Coordinate c = Projection.findStaticPoint(t.mLon, t.mLat, t.mHeading, distance2);
+            float xr = (float)ctx.origin.getOffsetX(c.getLongitude());
+            float yr = (float)ctx.origin.getOffsetY(c.getLatitude());
+
+            ctx.canvas.drawLine(x, y, xr, yr, ctx.paint);
 
             /*
              * If in track-up mode, rotate canvas around screen x/y of
@@ -208,7 +221,7 @@ public class Traffic {
 
 
             ctx.service.getShadowedText().draw(ctx.canvas, ctx.textPaint,
-                    text, Color.BLACK, (float)x, (float)y + radius + ctx.textPaint.getTextSize());
+                    text, Color.BLACK, (float)x, (float)y + b.getBitmap().getWidth() + ctx.textPaint.getTextSize());
 
 
             if (true == bRotated) {

@@ -571,6 +571,7 @@ public class Plan implements Observer {
             double lat, boolean finish) {
         boolean active = mActive;
         String airport = null;
+
         if (finish) {
             airport = mService.getDBResource().findClosestAirportID(lon, lat);
 

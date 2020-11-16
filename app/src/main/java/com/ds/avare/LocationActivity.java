@@ -534,8 +534,10 @@ public class LocationActivity extends Activity implements Observer {
         mChartOption.setCallback(new GenericCallback() {
             @Override
             public Object callback(Object o, Object o1) {
-                mPref.setChartType("" + (int) o1);
-                mLocationView.forceReload();
+                String oldC = mPref.getChartType();
+                String newC = Integer.toString((int)o1);
+                mPref.setChartType(newC);
+                mLocationView.forceReloadAfterChartChange(oldC, newC);
                 return null;
             }
         });
@@ -566,7 +568,7 @@ public class LocationActivity extends Activity implements Observer {
                 mPref.setLayerType(mLayerOption.getCurrentValue());
                 mLocationView.setLayerType(mPref.getLayerType());
                 return null;
-            };
+            }
         });
 
         mCenterButton = (ImageButton)view.findViewById(R.id.location_button_center);
@@ -891,7 +893,7 @@ public class LocationActivity extends Activity implements Observer {
 				}
 			}
 
-        });
+              });
 
         mService = null;
         mAnimateTracks = new AnimateButton(LocationActivity.this, mTracksButton, AnimateButton.DIRECTION_R_L, mPlanPrev);
